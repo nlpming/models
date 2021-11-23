@@ -1,3 +1,4 @@
+#coding:utf-8
 # Copyright 2021 The TensorFlow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +18,7 @@
 import functools
 import json
 import os
-
+import pdb
 # Import libraries
 from absl import app
 from absl import flags
@@ -189,7 +190,8 @@ def generate_classifier_dataset():
       "BoolQ",
       "WIC",
   ]:
-    assert not FLAGS.input_data_dir or FLAGS.tfds_params
+    #assert not FLAGS.input_data_dir or FLAGS.tfds_params
+    assert FLAGS.input_data_dir or FLAGS.tfds_params #必须一个不为空
   else:
     assert (FLAGS.input_data_dir and FLAGS.classification_task_name or
             FLAGS.tfds_params)
@@ -216,6 +218,7 @@ def generate_classifier_dataset():
         test_data_output_path=FLAGS.test_data_output_path,
         max_seq_length=FLAGS.max_seq_length)
   else:
+    # 定义每个每个数据集的处理类
     processors = {
         "ax":
             classifier_data_lib.AxProcessor,
@@ -407,6 +410,7 @@ def generate_tagging_dataset():
 
 
 def main(_):
+  pdb.set_trace()
   if FLAGS.tokenization == "WordPiece":
     if not FLAGS.vocab_file:
       raise ValueError(
@@ -421,7 +425,7 @@ def main(_):
     flags.mark_flag_as_required("train_data_output_path")
 
   if FLAGS.fine_tuning_task_type == "classification":
-    input_meta_data = generate_classifier_dataset()
+    input_meta_data = generate_classifier_dataset() #分类任务
   elif FLAGS.fine_tuning_task_type == "regression":
     input_meta_data = generate_regression_dataset()
   elif FLAGS.fine_tuning_task_type == "retrieval":

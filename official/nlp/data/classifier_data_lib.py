@@ -269,6 +269,63 @@ class ImdbProcessor(DataProcessor):
     return examples
 
 
+# class MnliProcessor(DataProcessor):
+#   """Processor for the MultiNLI data set (GLUE version)."""
+
+#   def __init__(self,
+#                mnli_type="matched",
+#                process_text_fn=tokenization.convert_to_unicode):
+#     super(MnliProcessor, self).__init__(process_text_fn)
+#     self.dataset = tfds.load("glue/mnli", try_gcs=True)
+#     if mnli_type not in ("matched", "mismatched"):
+#       raise ValueError("Invalid `mnli_type`: %s" % mnli_type)
+#     self.mnli_type = mnli_type
+
+#   def get_train_examples(self, data_dir):
+#     """See base class."""
+#     return self._create_examples_tfds("train")
+
+#   def get_dev_examples(self, data_dir):
+#     """See base class."""
+#     if self.mnli_type == "matched":
+#       return self._create_examples_tfds("validation_matched")
+#     else:
+#       return self._create_examples_tfds("validation_mismatched")
+
+#   def get_test_examples(self, data_dir):
+#     """See base class."""
+#     if self.mnli_type == "matched":
+#       return self._create_examples_tfds("test_matched")
+#     else:
+#       return self._create_examples_tfds("test_mismatched")
+
+#   def get_labels(self):
+#     """See base class."""
+#     return ["contradiction", "entailment", "neutral"]
+
+#   @staticmethod
+#   def get_processor_name():
+#     """See base class."""
+#     return "MNLI"
+
+#   def _create_examples_tfds(self, set_type):
+#     """Creates examples for the training/dev/test sets."""
+#     dataset = tfds.load(
+#         "glue/mnli", split=set_type, try_gcs=True).as_numpy_iterator()
+#     examples = []
+#     for i, example in enumerate(dataset):
+#       guid = "%s-%s" % (set_type, i)
+#       label = "contradiction"
+#       text_a = self.process_text_fn(example["hypothesis"])
+#       text_b = self.process_text_fn(example["premise"])
+#       if set_type != "test":
+#         label = self.get_labels()[example["label"]]
+#       examples.append(
+#           InputExample(
+#               guid=guid, text_a=text_a, text_b=text_b, label=label,
+#               weight=None))
+#     return examples
+
 class MnliProcessor(DataProcessor):
   """Processor for the MultiNLI data set (GLUE version)."""
 
@@ -276,56 +333,56 @@ class MnliProcessor(DataProcessor):
                mnli_type="matched",
                process_text_fn=tokenization.convert_to_unicode):
     super(MnliProcessor, self).__init__(process_text_fn)
-    self.dataset = tfds.load("glue/mnli", try_gcs=True)
     if mnli_type not in ("matched", "mismatched"):
-      raise ValueError("Invalid `mnli_type`: %s" % mnli_type)
+        raise ValueError("Invalid `mnli_type`: %s" % mnli_type)
     self.mnli_type = mnli_type
-
+  
   def get_train_examples(self, data_dir):
     """See base class."""
-    return self._create_examples_tfds("train")
+    return self._create_examples(
+        self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
 
   def get_dev_examples(self, data_dir):
     """See base class."""
     if self.mnli_type == "matched":
-      return self._create_examples_tfds("validation_matched")
+        return self._create_examples(
+            self._read_tsv(os.path.join(data_dir, "dev_matched.tsv")),
+            "dev_matched")
     else:
-      return self._create_examples_tfds("validation_mismatched")
-
+        return self._create_examples(
+            self._read_tsv(os.path.join(data_dir, "dev_mismatched.tsv")),
+            "dev_mismatched")
+    
   def get_test_examples(self, data_dir):
     """See base class."""
-    if self.mnli_type == "matched":
-      return self._create_examples_tfds("test_matched")
-    else:
-      return self._create_examples_tfds("test_mismatched")
+    return self._create_examples(
+        self._read_tsv(os.path.join(data_dir, "test_matched.tsv")), "test")
 
   def get_labels(self):
     """See base class."""
     return ["contradiction", "entailment", "neutral"]
-
+  
   @staticmethod
   def get_processor_name():
     """See base class."""
     return "MNLI"
 
-  def _create_examples_tfds(self, set_type):
-    """Creates examples for the training/dev/test sets."""
-    dataset = tfds.load(
-        "glue/mnli", split=set_type, try_gcs=True).as_numpy_iterator()
+  def _create_examples(self, lines, set_type):
+    """Creates examples for the training and dev sets."""
     examples = []
-    for i, example in enumerate(dataset):
-      guid = "%s-%s" % (set_type, i)
-      label = "contradiction"
-      text_a = self.process_text_fn(example["hypothesis"])
-      text_b = self.process_text_fn(example["premise"])
-      if set_type != "test":
-        label = self.get_labels()[example["label"]]
+    for (i, line) in enumerate(lines):
+      if i == 0:
+        continue
+      guid = "%s-%s" % (set_type, tokenization.convert_to_unicode(line[0]))
+      text_a = tokenization.convert_to_unicode(line[8])
+      text_b = tokenization.convert_to_unicode(line[9])
+      if set_type == "test":
+        label = "contradiction"
+      else:
+        label = tokenization.convert_to_unicode(line[-1])
       examples.append(
-          InputExample(
-              guid=guid, text_a=text_a, text_b=text_b, label=label,
-              weight=None))
+          InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
     return examples
-
 
 class MrpcProcessor(DefaultGLUEDataProcessor):
   """Processor for the MRPC data set (GLUE version)."""
